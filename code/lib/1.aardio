@@ -1,0 +1,16 @@
+﻿import win.ui;
+
+class 1{
+	ctor(parent,tParam){
+	/*DSG{{*/
+this = win.form(text='aardio form';right=759;bottom=469;parent=parent)
+this.add()
+/*}}*/
+
+	};
+}
+
+if( !owner ) 1().doModal();
+/**intellisense()
+1() = 窗口类\n!winform.
+end intellisense**/

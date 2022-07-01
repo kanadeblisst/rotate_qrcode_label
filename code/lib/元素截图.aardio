@@ -1,0 +1,76 @@
+﻿import win.ui;
+/*DSG{{*/
+var mainForm = win.form(text="Edge 浏览器控件 - web.view";right=468;bottom=546;bgcolor=16777215)
+mainForm.add(
+trackbar={cls="trackbar";left=106;top=476;right=353;bottom=506;font=LOGFONT(name='rotate');max=100;min=0;z=1}
+)
+/*}}*/
+
+import console;
+io.open()
+import web.view;
+import web.json;
+var wb = web.view(mainForm,,0/*自动分配调试端口*/);
+ 
+mainForm.show();
+
+//创建远程调试对象
+import web.socket.chrome;
+var ws = wb.openRemoteDebugging()
+ 
+//允许触发Runtime.executionContextCreated
+ws.Runtime.enable();
+/*
+
+var pos = mainForm.trackbar.pos;
+mainForm.trackbar.onnotify = function(id,code,ptr){  
+    if(code=0xFFFFFFF4){   
+        console.log(mainForm.trackbar.pos)
+        if(mainForm.trackbar.pos != pos){
+            var js = string.format(`this.setAttribute("style", "transform: rotate(%ddeg);");`, mainForm.trackbar.pos);
+            wb.waitEle(".vcode-spin-img", js, 200);
+        	pos = mainForm.trackbar.pos;
+        }
+    }   
+}
+*/
+/*
+qEle.style.display = "none" 
+qEle.outerHTML = ""
+win.show(wb.hwndEmbedding,true)
+*/
+
+/*
+var pageX,pageY;
+ws.Page.getLayoutMetrics().end = function(result, err){
+	pageX = result[["layoutViewport"]].pageX
+	pageY = result[["layoutViewport"]].pageY
+}
+wb.wait("baidu");
+js = '(function(){
+	var a = document.querySelector("#s_lg_img").getBoundingClientRect();
+	return a.toJSON();
+})()'
+
+ws.Runtime.evaluate(expression=js, awaitPromise=true,returnByValue=true).end = function(result, err){
+	if(result[["result"]]){
+		result = result[["result"]];
+	}
+	if(result[["type"]] == "string"){
+		result = web.json.tryParse(result[["value"]]);
+	}elseif(result[["type"]] == "object"){
+		result = result[["value"]];
+	}
+	else{
+		console.dump(result);
+	}
+	var clip = {scale=1;x=result.left;y=result.top;width=result.width;height=result.height};
+	console.dump(clip)
+	ws.Page.captureScreenshot(clip=clip).end = function(result,err){
+		if(result[["data"]]){
+       		var bin = crypt.decodeBin(result[["data"]]);
+       		string.save("/screenshot.png",bin )
+   		} 
+	}
+}
+*/

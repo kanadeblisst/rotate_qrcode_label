@@ -1,0 +1,164 @@
+//截图 远程调试
+import win.ui;
+import fsys;
+import gdip.snap;
+import web.view;
+import fsys.dlg;
+import web.socket.chrome;
+/*DSG{{*/
+var mainForm = win.form(text="旋转验证码标注";right=468;bottom=605;acceptfiles=1;bgcolor=16777215;border="thin")
+mainForm.add(
+angle={cls="edit";text="0";left=316;top=481;right=373;bottom=520;align="center";font=LOGFONT(h=-16);multiline=1;z=2};
+button={cls="button";text="旋转";left=381;top=471;right=451;bottom=518;z=3};
+chooseDir={cls="button";text="选择";left=273;top=537;right=343;bottom=584;z=8};
+imgIndex={cls="edit";text="1";left=18;top=541;right=75;bottom=580;align="center";font=LOGFONT(h=-16);multiline=1;z=7};
+lastButton={cls="button";text="向前";left=88;top=537;right=158;bottom=584;z=6};
+nextButton={cls="button";text="向后";left=175;top=536;right=245;bottom=583;z=5};
+saveButton={cls="button";text="保存";left=379;top=536;right=449;bottom=583;z=4};
+trackbar={cls="trackbar";left=11;top=482;right=310;bottom=512;font=LOGFONT(name='rotate');max=100;min=0;z=1}
+)
+/*}}*/
+
+//import console;
+//io.open()
+
+var wb = web.view(mainForm,,0);
+var ws = wb.openRemoteDebugging()
+ws.Runtime.enable();
+wb.go('/res/1.html')
+
+fsys.createDir("\result");
+mainForm.trackbar.max=180;
+mainForm.trackbar.min=-179;
+mainForm.trackbar.pos=0;
+var curImgIndex = 1;
+var clipImgBox = null;
+var imgs = null;
+
+var getImgs = function(path){
+	var d = fsys.list(path)
+	var imgs = {};
+	for(i=1;#d;1){
+		table.push(imgs, d[d[i]]);
+	}
+	var path = imgs[curImgIndex];
+	path = string.replace(path, "@\", "/");
+	var js = string.format(`this.setAttribute("src", "file://%s");`, path);
+    wb.waitEle(".vcode-spin-img", js, 100);
+	return imgs;
+}
+
+var snapElem = function(filename){
+	if(clipImgBox){
+		ws.Page.captureScreenshot(clip=clipImgBox).end = function(result,err){
+			if(result[["data"]]){
+       			var bin = crypt.decodeBin(result[["data"]]);
+       			string.save(filename, bin);
+   			} 
+		}
+		return;
+	}
+	var pageX,pageY;
+	ws.Page.getLayoutMetrics().end = function(result, err){
+		pageX = result[["layoutViewport"]].pageX
+		pageY = result[["layoutViewport"]].pageY
+	}
+	js = '(function(){
+		var a = document.querySelector(".vcode-spin-faceboder").getBoundingClientRect();
+		return a.toJSON();
+	})()'
+
+	ws.Runtime.evaluate(expression=js, awaitPromise=true,returnByValue=true).end = function(result, err){
+		if(result[["result"]]){
+			result = result[["result"]];
+		}
+		if(result[["type"]] == "string"){
+			result = web.json.tryParse(result[["value"]]);
+		}elseif(result[["type"]] == "object"){
+			result = result[["value"]];
+		}
+		else{
+			console.dump(result);
+		}
+		var clip = {scale=1;x=result.left+pageX;y=result.top+pageY;width=result.width;height=result.height};
+		clipImgBox = clip;
+		ws.Page.captureScreenshot(clip=clipImgBox).end = function(result,err){
+			if(result[["data"]]){
+       			var bin = crypt.decodeBin(result[["data"]]);
+       			string.save(filename, bin )
+   			} 
+		}
+	}
+}
+
+
+mainForm.trackbar.onnotify = function(id,code,ptr){ 
+	if(code==0xFFFFFFF4){ 
+		var js = string.format(`this.setAttribute("style", "transform: rotate(%ddeg);");`, mainForm.trackbar.pos);
+        wb.waitEle(".vcode-spin-img", js, 100);
+        mainForm.angle.text = mainForm.trackbar.pos;
+	}
+}
+
+mainForm.button.oncommand = function(id,event){
+	var a = mainForm.angle.text;
+	mainForm.trackbar.pos = tonumber(a);
+}
+
+mainForm.lastButton.oncommand = function(id,event){
+	if(!imgs or !#imgs) {
+		win.msgbox("请先选择验证码图片目录！","警告");
+		return;
+	}
+	if(curImgIndex == 1){
+		curImgIndex = #imgs;
+	}else{
+		curImgIndex -= 1;
+	}
+	var path = imgs[curImgIndex];
+	path = string.replace(path, "@\", "/");
+	var js = string.format(`this.setAttribute("src", "file://%s");`, path);
+    wb.waitEle(".vcode-spin-img", js, 100);
+    mainForm.imgIndex.text = tostring(curImgIndex);
+    mainForm.trackbar.pos = 0;
+}
+
+mainForm.nextButton.oncommand = function(id,event){
+	if(!imgs or !#imgs) {
+		win.msgbox("请先选择验证码图片目录！","警告");
+		return;
+	}
+	if(curImgIndex == #imgs){
+		curImgIndex = 1;
+	}else{
+		curImgIndex += 1;
+	}
+	var path = imgs[curImgIndex];
+	path = string.replace(path, "@\", "/");
+	var js = string.format(`this.setAttribute("src", "file://%s");`, path);
+    wb.waitEle(".vcode-spin-img", js, 100);
+    mainForm.imgIndex.text = tostring(curImgIndex);
+    mainForm.trackbar.pos = 0;
+}
+
+mainForm.saveButton.oncommand = function(id,event){
+	if(!imgs or !#imgs) {
+		win.msgbox("请先选择验证码图片目录！","警告");
+		return;
+	}
+	var filename = string.format("\result\%d.jpg", curImgIndex);
+	// 窗口截图
+	// var picture = gdip.snap(mainForm.hwnd);
+	// picture.save(filename,100);
+	// 元素截图
+	snapElem(filename);
+}
+
+mainForm.chooseDir.oncommand = function(id,event){
+	var imgPath = fsys.dlg.openDir();
+	if(!imgPath) return;
+	imgs = getImgs(imgPath);
+}
+
+mainForm.show();
+return win.loopMessage();
